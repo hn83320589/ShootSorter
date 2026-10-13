@@ -25,6 +25,70 @@
         </StatusBar>
 
         <TabControl Margin="8">
+            <TabItem Header="歸檔紀錄" DataContext="{Binding Records}">
+                <DockPanel Margin="12">
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock Text="結果" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <ComboBox ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding SelectedStatus}"
+                                  DisplayMemberPath="Label" Width="90" Margin="0,0,16,0" />
+                        <TextBlock Text="處理日期" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <DatePicker SelectedDate="{Binding FromDate}" Width="130" SelectedDateFormat="Short" />
+                        <TextBlock Text="～" VerticalAlignment="Center" Margin="6,0" />
+                        <DatePicker SelectedDate="{Binding ToDate}" Width="130" SelectedDateFormat="Short" Margin="0,0,8,0" />
+                        <Button Content="清除篩選" Command="{Binding ClearFilterCommand}" Padding="10,2" Margin="0,0,8,0" />
+                        <Button Content="重新整理" Command="{Binding RefreshCommand}" Padding="10,2" />
+                    </WrapPanel>
+
+                    <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <Button Content="重試勾選項目" Command="{Binding RetrySelectedCommand}" Padding="12,3" Margin="0,0,8,0" />
+                            <Button Content="全部失敗項目重試" Command="{Binding RetryAllFailedCommand}" Padding="12,3" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Summary}" />
+                            <TextBlock Text="{Binding RetryMessage}" Foreground="#1565C0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" CanUserAddRows="False"
+                              CanUserDeleteRows="False" HeadersVisibility="Column" SelectionMode="Extended"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E0E0E0">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusText}" Value="失敗">
+                                        <Setter Property="Background" Value="#FDECEA" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding StatusText}" Value="略過">
+                                        <Setter Property="Background" Value="#FFF8E1" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="重試" Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding CanRetry}" HorizontalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="處理時間" Binding="{Binding ProcessedAt, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="結果" Binding="{Binding StatusText, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="原始路徑" Binding="{Binding SourcePath, Mode=OneWay}" IsReadOnly="True" MaxWidth="320" />
+                            <DataGridTextColumn Header="目的路徑" Binding="{Binding DestinationPath, Mode=OneWay}" IsReadOnly="True" MaxWidth="360" />
+                            <DataGridTextColumn Header="拍攝時間" Binding="{Binding CapturedAt, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="EXIF" Binding="{Binding ExifText, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="案件" Binding="{Binding CaseName, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="重試次數" Binding="{Binding RetryCount, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="原因" Binding="{Binding Reason, Mode=OneWay}" IsReadOnly="True" MaxWidth="360" />
+                            <DataGridTextColumn Header="SHA-256" Binding="{Binding Sha256, Mode=OneWay}" IsReadOnly="True" MaxWidth="200" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
             <TabItem Header="設定" DataContext="{Binding Settings}">
                 <Grid Margin="12">
                     <Grid.ColumnDefinitions>

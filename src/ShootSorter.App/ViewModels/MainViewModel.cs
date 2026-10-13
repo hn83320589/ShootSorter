@@ -19,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(ArchiveController controller, IFolderPicker folderPicker, SettingsLoadResult loadResult)
     {
         _controller = controller;
+        Records = new RecordsViewModel(controller);
         Settings = new SettingsViewModel(folderPicker, SaveSettings);
         Settings.Load(loadResult.Settings);
 
@@ -34,6 +35,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         ShowProblems(controller.Apply(loadResult.Settings));
     }
+
+    public RecordsViewModel Records { get; }
 
     public SettingsViewModel Settings { get; }
 
