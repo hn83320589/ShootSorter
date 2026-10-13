@@ -11,6 +11,7 @@ namespace ShootSorter.App;
 public partial class App : Application
 {
     private ArchiveController? _controller;
+    private TrayIcon? _trayIcon;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -42,6 +43,10 @@ public partial class App : Application
 
             var window = new MainWindow { DataContext = new MainViewModel(_controller, new FolderPicker(), loadResult) };
             window.Closed += (_, _) => Shutdown();
+
+            _trayIcon = new TrayIcon(window, LoadAppIcon());
+            _controller.Worker.BatchCompleted += (_, summary) => Dispatcher.BeginInvoke(() => _trayIcon.ShowBatchSummary(summary));
+
             window.Show();
         }
         catch (Exception ex)
@@ -59,8 +64,17 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _trayIcon?.Dispose();
         _controller?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         base.OnExit(e);
+    }
+
+    private static System.Drawing.Icon LoadAppIcon()
+    {
+        var resource = GetResourceStream(new Uri("pack://application:,,,/Assets/ShootSorter.ico"))
+            ?? throw new InvalidOperationException("找不到內嵌的程式圖示 Assets/ShootSorter.ico。");
+        using var stream = resource.Stream;
+        return new System.Drawing.Icon(stream);
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

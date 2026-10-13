@@ -1,19 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- 只為了系統匣的 NotifyIcon；不引入額外套件。 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\ShootSorter.ico</ApplicationIcon>
+    <AssemblyTitle>ShootSorter</AssemblyTitle>
+  </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ShootSorter.Core\ShootSorter.Core.csproj" />
+    <!-- WinForms 的全域 using 會讓 Application、MessageBox 等型別與 WPF 衝突，需要時在檔案內明確引用。 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\ShootSorter.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ShootSorter.Core\ShootSorter.Core.csproj" />
+  </ItemGroup>
 
 </Project>

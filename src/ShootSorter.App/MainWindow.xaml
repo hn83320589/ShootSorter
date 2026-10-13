@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:ShootSorter.App.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="ShootSorter 攝影棚素材自動歸檔" Height="640" Width="1000" MinHeight="480" MinWidth="760"
+        Title="ShootSorter 攝影棚素材自動歸檔" Icon="Assets/ShootSorter.ico" Height="640" Width="1000" MinHeight="480" MinWidth="760"
         FontSize="13">
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="#FDECEA" BorderBrush="#E57373" BorderThickness="0,0,0,1" Padding="12,8"
