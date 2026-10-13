@@ -31,6 +31,10 @@ public sealed partial class MainViewModel : ObservableObject
             case SettingsLoadStatus.Corrupt:
                 _startupNotices.Add($"設定檔內容損毀，已改用預設值。原檔已備份至：{loadResult.BackupPath}（{loadResult.Error}）");
                 break;
+            case SettingsLoadStatus.Unreadable:
+                _startupNotices.Add(
+                    $"無法讀取設定檔，本次先以預設值執行（{loadResult.Error}）。請排除問題後重新啟動；在那之前按「儲存並套用」會覆寫原設定檔。");
+                break;
         }
 
         ShowProblems(controller.Apply(loadResult.Settings));

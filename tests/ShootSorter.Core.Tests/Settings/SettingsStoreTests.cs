@@ -46,6 +46,25 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Contains("收件匣", File.ReadAllText(_file));
     }
 
+    [Fact]
+    public void Load_FileUnreadable_ReturnsDefaultsWithoutTouchingFile()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
+        File.WriteAllText(_file, "{}");
+
+        SettingsLoadResult result;
+        using (new FileStream(_file, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            result = _store.Load();
+        }
+
+        Assert.Equal(SettingsLoadStatus.Unreadable, result.Status);
+        Assert.Equivalent(new AppSettings(), result.Settings, strict: true);
+        Assert.Contains(nameof(IOException), result.Error);
+        Assert.Null(result.BackupPath);
+        Assert.Equal("{}", File.ReadAllText(_file));
+    }
+
     [Theory]
     [InlineData("{ not json")]
     [InlineData("null")]
