@@ -101,6 +101,15 @@ public sealed class SqliteArchiveLog
             ("$status", ArchiveStatus.Success.ToString())).SingleOrDefault();
     }
 
+    /// <summary>找出同一原始路徑的最新失敗紀錄。Windows 路徑不分大小寫，比對也不分。</summary>
+    public ArchiveRecord? FindFailedBySource(string sourcePath)
+    {
+        return Read(
+            $"SELECT {Columns} FROM ArchiveRecords WHERE SourcePath = $source COLLATE NOCASE AND Status = $status ORDER BY Id DESC LIMIT 1;",
+            ("$source", sourcePath),
+            ("$status", ArchiveStatus.Failed.ToString())).SingleOrDefault();
+    }
+
     /// <summary>依條件查詢，最新的排在前面。</summary>
     public IReadOnlyList<ArchiveRecord> Query(ArchiveQuery query)
     {

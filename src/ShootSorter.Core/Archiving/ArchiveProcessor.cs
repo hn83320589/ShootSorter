@@ -12,12 +12,20 @@ public sealed class ArchiveProcessor(CaptureDateResolver dateResolver, SqliteArc
 {
     public const string SkippedFolderName = "_Skipped";
 
-    /// <summary>處理一個檔案並寫入紀錄。被排除或不支援的副檔名回傳 null，不碰檔案也不寫紀錄。</summary>
+    /// <summary>
+    /// 處理一個檔案並寫入紀錄。被排除或不支援的副檔名回傳 null，不碰檔案也不寫紀錄。
+    /// 同一路徑已有失敗紀錄時（失敗的檔案留在收件匣，重新啟動會再被掃到）視為重試，更新那一筆而不新增。
+    /// </summary>
     public ArchiveRecord? Process(string sourcePath, ArchiveOptions options)
     {
         if (MediaTypeFilter.Classify(sourcePath, options.ExcludedExtensions) is not { } kind)
         {
             return null;
+        }
+
+        if (log.FindFailedBySource(sourcePath) is { } previous)
+        {
+            return UpdateAttempt(previous, Archive(sourcePath, kind, options));
         }
 
         var record = Archive(sourcePath, kind, options);
@@ -38,6 +46,11 @@ public sealed class ArchiveProcessor(CaptureDateResolver dateResolver, SqliteArc
             ? Archive(previous.SourcePath, kind, options)
             : Failed(previous.SourcePath, sha256: null, "副檔名不支援或已被排除。");
 
+        return UpdateAttempt(previous, outcome);
+    }
+
+    private ArchiveRecord UpdateAttempt(ArchiveRecord previous, ArchiveRecord outcome)
+    {
         var updated = outcome with { Id = previous.Id, RetryCount = previous.RetryCount + 1 };
         log.Update(updated);
         return updated;

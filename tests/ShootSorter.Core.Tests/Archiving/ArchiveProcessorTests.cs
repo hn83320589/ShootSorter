@@ -170,6 +170,48 @@ public sealed class ArchiveProcessorTests : IDisposable
     }
 
     [Fact]
+    public void Process_SamePathFailsAgain_UpdatesExistingFailedRecord()
+    {
+        // 失敗的檔案會留在收件匣，重新啟動掃描時會再被處理一次，不應產生第二筆失敗紀錄。
+        var source = DropInInbox("IMG_1.jpg", JpegExifBuilder.WithoutExif());
+        var missingRoot = Path.Combine(_temp.Path, "missing");
+        var first = _processor.Process(source, Options(root: missingRoot))!;
+
+        var second = _processor.Process(source, Options(root: missingRoot))!;
+
+        Assert.Equal(first.Id, second.Id);
+        Assert.Equal(ArchiveStatus.Failed, second.Status);
+        Assert.Equal(1, second.RetryCount);
+        Assert.Single(_log.Query(new ArchiveQuery()));
+    }
+
+    [Fact]
+    public void Process_SamePathSucceedsAfterFailure_ClosesFailedRecord()
+    {
+        var source = DropInInbox("IMG_1.jpg", JpegExifBuilder.WithoutExif());
+        var failed = _processor.Process(source, Options(root: Path.Combine(_temp.Path, "missing")))!;
+
+        var succeeded = _processor.Process(source, Options())!;
+
+        Assert.Equal(failed.Id, succeeded.Id);
+        Assert.Equal(ArchiveStatus.Success, succeeded.Status);
+        Assert.Equal(1, succeeded.RetryCount);
+        Assert.Equivalent(succeeded, Assert.Single(_log.Query(new ArchiveQuery())), strict: true);
+    }
+
+    [Fact]
+    public void Process_SamePathAfterSuccess_AddsNewRecord()
+    {
+        // 同名的新檔案（例如下一次拍攝）是另一個檔案，成功紀錄不能被覆寫。
+        var first = _processor.Process(DropInInbox("IMG_1.jpg", JpegExifBuilder.WithDates(original: ExifDate)), Options())!;
+
+        var second = _processor.Process(DropInInbox("IMG_1.jpg", JpegExifBuilder.WithoutExif()), Options())!;
+
+        Assert.NotEqual(first.Id, second.Id);
+        Assert.Equal(2, _log.Query(new ArchiveQuery()).Count);
+    }
+
+    [Fact]
     public void Retry_AfterLockReleased_SucceedsAndUpdatesSameRecord()
     {
         var source = DropInInbox("IMG_1.jpg", JpegExifBuilder.WithDates(original: ExifDate));

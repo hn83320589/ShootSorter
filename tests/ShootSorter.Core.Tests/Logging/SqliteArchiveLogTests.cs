@@ -63,6 +63,17 @@ public sealed class SqliteArchiveLogTests : IDisposable
     }
 
     [Fact]
+    public void FindFailedBySource_MatchesPathIgnoringCaseAndOnlyFailed()
+    {
+        _log.Add(Record(ArchiveStatus.Success));
+        Assert.Null(_log.FindFailedBySource(@"C:\Inbox\a.jpg"));
+
+        var failedId = _log.Add(Record(ArchiveStatus.Failed));
+        Assert.Equal(failedId, _log.FindFailedBySource(@"c:\inbox\A.JPG")?.Id);
+        Assert.Null(_log.FindFailedBySource(@"C:\Inbox\b.jpg"));
+    }
+
+    [Fact]
     public void Query_ByStatus_ReturnsOnlyThatStatus()
     {
         _log.Add(Record(ArchiveStatus.Success));
