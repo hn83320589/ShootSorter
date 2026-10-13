@@ -97,9 +97,13 @@ public sealed class ArchiveWorker(ArchiveProcessor processor, Func<ArchiveOption
 
             if (HasPendingSummary())
             {
+                // 新工作先到時取消靜止期計時器，避免每個檔案都留下一個空轉到逾時的 timer。
+                using var quietCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 var next = reader.WaitToReadAsync(cancellationToken).AsTask();
-                var quiet = Task.Delay(timings.BatchQuietPeriod, cancellationToken);
-                if (await Task.WhenAny(next, quiet) == quiet)
+                var quiet = Task.Delay(timings.BatchQuietPeriod, quietCancellation.Token);
+                var first = await Task.WhenAny(next, quiet);
+                await quietCancellation.CancelAsync();
+                if (first == quiet)
                 {
                     PublishSummary();
                 }
