@@ -6,6 +6,9 @@ public class MediaTypeFilterTests
 {
     [Theory]
     [InlineData("a.jpg")]
+    [InlineData("a.jpeg")]
+    [InlineData("a.TIF")]
+    [InlineData("a.tiff")]
     [InlineData("a.JPG")]
     [InlineData("a.png")]
     [InlineData("a.Arw")]

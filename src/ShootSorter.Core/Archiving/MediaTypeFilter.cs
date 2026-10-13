@@ -3,7 +3,7 @@ namespace ShootSorter.Core.Archiving;
 public static class MediaTypeFilter
 {
     private static readonly HashSet<string> ImageExtensions =
-        new([".jpg", ".png", ".arw", ".cr3", ".nef"], StringComparer.OrdinalIgnoreCase);
+        new([".jpg", ".jpeg", ".png", ".tif", ".tiff", ".arw", ".cr3", ".nef"], StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> VideoExtensions =
         new([".mp4", ".mov"], StringComparer.OrdinalIgnoreCase);

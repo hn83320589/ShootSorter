@@ -20,6 +20,15 @@ public sealed class MetadataExtractorExifReaderTests : IDisposable
     }
 
     [Fact]
+    public void ReadCaptureDate_TiffFile_ReturnsDateTimeOriginal()
+    {
+        var original = new DateTime(2024, 5, 1, 10, 20, 30);
+        var path = _temp.WriteFile("a.tif", JpegExifBuilder.TiffWithDates(original: original));
+
+        Assert.Equal(original, _reader.ReadCaptureDate(path));
+    }
+
+    [Fact]
     public void ReadCaptureDate_PrefersOriginalOverDigitized()
     {
         var original = new DateTime(2024, 5, 1, 10, 20, 30);

@@ -18,6 +18,25 @@ public static class JpegExifBuilder
 
     public static byte[] WithDates(DateTime? original = null, DateTime? digitized = null)
     {
+        var tiff = BuildTiff(DateTags(original, digitized));
+        var app1Length = 2 + 6 + tiff.Length;
+
+        using var stream = new MemoryStream();
+        stream.Write([0xFF, 0xD8, 0xFF, 0xE1, (byte)(app1Length >> 8), (byte)app1Length]);
+        stream.Write("Exif\0\0"u8);
+        stream.Write(tiff);
+        stream.Write([0xFF, 0xD9]);
+        return stream.ToArray();
+    }
+
+    /// <summary>EXIF 本身就是 TIFF 結構，直接輸出即為帶 EXIF 的 TIFF 檔（ARW、NEF 等 RAW 也是 TIFF 為基礎）。</summary>
+    public static byte[] TiffWithDates(DateTime? original = null, DateTime? digitized = null)
+    {
+        return BuildTiff(DateTags(original, digitized));
+    }
+
+    private static List<(ushort Tag, DateTime Value)> DateTags(DateTime? original, DateTime? digitized)
+    {
         var tags = new List<(ushort Tag, DateTime Value)>();
         if (original is { } o)
         {
@@ -29,15 +48,7 @@ public static class JpegExifBuilder
             tags.Add((TagDateTimeDigitized, d));
         }
 
-        var tiff = BuildTiff(tags);
-        var app1Length = 2 + 6 + tiff.Length;
-
-        using var stream = new MemoryStream();
-        stream.Write([0xFF, 0xD8, 0xFF, 0xE1, (byte)(app1Length >> 8), (byte)app1Length]);
-        stream.Write("Exif\0\0"u8);
-        stream.Write(tiff);
-        stream.Write([0xFF, 0xD9]);
-        return stream.ToArray();
+        return tags;
     }
 
     private static byte[] BuildTiff(List<(ushort Tag, DateTime Value)> tags)
