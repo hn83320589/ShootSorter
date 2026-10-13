@@ -42,6 +42,17 @@ public sealed class ArchiveProcessor(CaptureDateResolver dateResolver, SqliteArc
             throw new InvalidOperationException($"紀錄 {recordId} 的狀態為 {previous.Status}，只有失敗的紀錄可以重試。");
         }
 
+        if (!File.Exists(previous.SourcePath))
+        {
+            // 檔案已被使用者移走，重試不可能成功；結案為略過，讓它離開失敗清單。
+            return UpdateAttempt(previous, previous with
+            {
+                Status = ArchiveStatus.Skipped,
+                Reason = $"原始檔案已不在收件匣，無法重試，紀錄已結案：{previous.SourcePath}",
+                ProcessedAt = time.GetUtcNow(),
+            });
+        }
+
         var outcome = MediaTypeFilter.Classify(previous.SourcePath, options.ExcludedExtensions) is { } kind
             ? Archive(previous.SourcePath, kind, options)
             : Failed(previous.SourcePath, sha256: null, "副檔名不支援或已被排除。");

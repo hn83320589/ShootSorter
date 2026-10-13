@@ -234,17 +234,20 @@ public sealed class ArchiveProcessorTests : IDisposable
     }
 
     [Fact]
-    public void Retry_SourceGone_StaysFailedAndCountsAttempt()
+    public void Retry_SourceGone_ClosesAsSkippedSoItLeavesTheFailedList()
     {
+        // 使用者已自行把檔案移出收件匣，重試永遠不會成功；保持失敗只會讓「全部重試」一直重試它。
         var source = DropInInbox("IMG_1.jpg", JpegExifBuilder.WithoutExif());
         var failed = _processor.Process(source, Options(root: Path.Combine(_temp.Path, "missing")))!;
         File.Delete(source);
 
         var retried = _processor.Retry(failed.Id, Options());
 
-        Assert.Equal(ArchiveStatus.Failed, retried.Status);
-        Assert.Contains("原始檔案不存在", retried.Reason);
+        Assert.Equal(failed.Id, retried.Id);
+        Assert.Equal(ArchiveStatus.Skipped, retried.Status);
+        Assert.Contains("原始檔案已不在", retried.Reason);
         Assert.Equal(1, retried.RetryCount);
+        Assert.Empty(_log.Query(new ArchiveQuery(Status: ArchiveStatus.Failed)));
     }
 
     [Fact]
