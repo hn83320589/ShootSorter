@@ -30,6 +30,8 @@ public sealed partial class RecordRowViewModel(ArchiveRecord record) : Observabl
 
     public string ExifText => Record.MissingExif ? "無 EXIF" : string.Empty;
 
+    public string FileName => System.IO.Path.GetFileName(Record.SourcePath);
+
     public string SourcePath => Record.SourcePath;
 
     public string DestinationPath => Record.DestinationPath ?? string.Empty;

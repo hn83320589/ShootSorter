@@ -76,13 +76,14 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="處理時間" Binding="{Binding ProcessedAt, Mode=OneWay}" IsReadOnly="True" />
                             <DataGridTextColumn Header="結果" Binding="{Binding StatusText, Mode=OneWay}" IsReadOnly="True" />
-                            <DataGridTextColumn Header="原始路徑" Binding="{Binding SourcePath, Mode=OneWay}" IsReadOnly="True" MaxWidth="320" />
-                            <DataGridTextColumn Header="目的路徑" Binding="{Binding DestinationPath, Mode=OneWay}" IsReadOnly="True" MaxWidth="360" />
-                            <DataGridTextColumn Header="拍攝時間" Binding="{Binding CapturedAt, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="檔名" Binding="{Binding FileName, Mode=OneWay}" IsReadOnly="True" />
                             <DataGridTextColumn Header="EXIF" Binding="{Binding ExifText, Mode=OneWay}" IsReadOnly="True" />
                             <DataGridTextColumn Header="案件" Binding="{Binding CaseName, Mode=OneWay}" IsReadOnly="True" />
-                            <DataGridTextColumn Header="重試次數" Binding="{Binding RetryCount, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="拍攝時間" Binding="{Binding CapturedAt, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="目的路徑" Binding="{Binding DestinationPath, Mode=OneWay}" IsReadOnly="True" MaxWidth="360" />
                             <DataGridTextColumn Header="原因" Binding="{Binding Reason, Mode=OneWay}" IsReadOnly="True" MaxWidth="360" />
+                            <DataGridTextColumn Header="重試次數" Binding="{Binding RetryCount, Mode=OneWay}" IsReadOnly="True" />
+                            <DataGridTextColumn Header="原始路徑" Binding="{Binding SourcePath, Mode=OneWay}" IsReadOnly="True" MaxWidth="320" />
                             <DataGridTextColumn Header="SHA-256" Binding="{Binding Sha256, Mode=OneWay}" IsReadOnly="True" MaxWidth="200" />
                         </DataGrid.Columns>
                     </DataGrid>
