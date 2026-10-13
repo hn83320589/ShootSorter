@@ -425,6 +425,8 @@ test-results/
 # Mac bundle stuff
 *.dmg
 *.app
+# 範本中給 macOS 用的 *.app 在 Windows（不分大小寫）會誤排除 ShootSorter.App 專案資料夾
+!src/ShootSorter.App/
 
 # content below from: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
 # General
