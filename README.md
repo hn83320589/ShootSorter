@@ -158,7 +158,7 @@ flowchart LR
 | 6 | 同名不同內容產生 `_001` | `UniqueFileNamerTests`、`Process_SameNameDifferentContent_…` |
 | 7 | 欄位完整、可依狀態與日期篩選 | `SqliteArchiveLogTests`；歸檔紀錄分頁 |
 | 8 | 單筆與批次重試、狀態更新 | `Retry_AfterLockReleased_…`；畫面實測 |
-| 9 | 系統匣與三種數量的通知 | `BatchSummaryTests`；畫面實測 |
+| 9 | 系統匣與三種數量的通知 | `BatchSummaryTests`；手動實測最小化、氣泡通知與雙擊還原 |
 | 10 | 設定檔不存在或路徑無效時不閃退 | `SettingsStoreTests`、`SettingsValidatorTests`；實測三種情境 |
 | 11 | 至少 15 個單元測試全數通過 | 95 個 |
 | 12 | README | 本文件 |
