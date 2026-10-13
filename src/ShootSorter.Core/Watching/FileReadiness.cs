@@ -22,7 +22,7 @@ public static class FileReadiness
                 return false;
             }
 
-            if (CanOpenExclusively(path))
+            if (CanStopWaiting(path))
             {
                 return true;
             }
@@ -42,11 +42,16 @@ public static class FileReadiness
         }
     }
 
-    private static bool CanOpenExclusively(string path)
+    private static bool CanStopWaiting(string path)
     {
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // 權限不足不會因為等待而改變，交給處理流程記錄失敗（含原因），使用者才看得到這個檔案。
             return true;
         }
         catch (FileNotFoundException)

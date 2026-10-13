@@ -1,3 +1,6 @@
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using ShootSorter.Core.Archiving;
 using ShootSorter.Core.Logging;
 using ShootSorter.Core.Watching;
@@ -60,6 +63,36 @@ public sealed class ArchiveWorkerTests : IDisposable
         await _f.WaitForBatchesAsync(1);
 
         Assert.Equal("a.jpg", Path.GetFileName(Assert.Single(_f.Records).SourcePath));
+    }
+
+    [Fact]
+    [SupportedOSPlatform("windows")]
+    public async Task UnreadableFile_IsRecordedAsFailedInsteadOfOnlyRaisingError()
+    {
+        var path = _f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif());
+        var errors = new List<Exception>();
+        _f.Worker.ProcessingError += (_, ex) => { lock (errors) { errors.Add(ex); } };
+        var file = new FileInfo(path);
+        var denyRead = new FileSystemAccessRule(WindowsIdentity.GetCurrent().User!, FileSystemRights.ReadData, AccessControlType.Deny);
+        var acl = file.GetAccessControl();
+        acl.AddAccessRule(denyRead);
+        file.SetAccessControl(acl);
+        try
+        {
+            _f.Worker.EnqueueFile(path);
+            await _f.WaitForRecordsAsync(1);
+        }
+        finally
+        {
+            acl.RemoveAccessRule(denyRead);
+            file.SetAccessControl(acl);
+        }
+
+        var record = Assert.Single(_f.Records);
+        Assert.Equal(ArchiveStatus.Failed, record.Status);
+        Assert.Contains(nameof(UnauthorizedAccessException), record.Reason);
+        Assert.Equivalent(record, _f.Log.Get(record.Id), strict: true);
+        Assert.Empty(errors);
     }
 
     [Fact]
