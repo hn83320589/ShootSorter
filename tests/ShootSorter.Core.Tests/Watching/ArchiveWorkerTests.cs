@@ -1,0 +1,115 @@
+using ShootSorter.Core.Archiving;
+using ShootSorter.Core.Logging;
+using ShootSorter.Core.Watching;
+using ShootSorter.Core.Tests.TestSupport;
+
+namespace ShootSorter.Core.Tests.Watching;
+
+public sealed class ArchiveWorkerTests : IDisposable
+{
+    private readonly WorkerFixture _f = new();
+
+    public ArchiveWorkerTests() => _f.Worker.Start();
+
+    public void Dispose() => _f.Dispose();
+
+    [Fact]
+    public async Task EnqueueFile_ProcessesAndReportsBatch()
+    {
+        _f.Worker.EnqueueFile(_f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif()));
+
+        await _f.WaitForBatchesAsync(1);
+
+        Assert.Equal(ArchiveStatus.Success, Assert.Single(_f.Records).Status);
+        Assert.Equal(new BatchSummary(Succeeded: 1, Skipped: 0, Failed: 0), Assert.Single(_f.Batches));
+    }
+
+    [Fact]
+    public async Task FilesArrivingTogether_AreSummarisedAsOneBatch()
+    {
+        var content = JpegExifBuilder.WithoutExif();
+        _f.Worker.EnqueueFile(_f.DropInInbox("a.jpg", content));
+        _f.Worker.EnqueueFile(_f.DropInInbox("b.jpg", content));
+        _f.Worker.EnqueueFile(_f.DropInInbox("c.png", [9, 9, 9]));
+
+        await _f.WaitForBatchesAsync(1);
+
+        Assert.Equal(new BatchSummary(Succeeded: 2, Skipped: 1, Failed: 0), Assert.Single(_f.Batches));
+    }
+
+    [Fact]
+    public async Task SamePathEnqueuedTwice_IsProcessedOnce()
+    {
+        var path = _f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif());
+        _f.Worker.EnqueueFile(path);
+        _f.Worker.EnqueueFile(path);
+
+        await _f.WaitForBatchesAsync(1);
+
+        Assert.Single(_f.Records);
+        Assert.Single(_f.Log.Query(new ArchiveQuery()));
+    }
+
+    [Fact]
+    public async Task FileRemovedBeforeProcessing_IsIgnoredWithoutRecord()
+    {
+        var gone = Path.Combine(_f.Inbox, "gone.jpg");
+        _f.Worker.EnqueueFile(gone);
+        _f.Worker.EnqueueFile(_f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif()));
+
+        await _f.WaitForBatchesAsync(1);
+
+        Assert.Equal("a.jpg", Path.GetFileName(Assert.Single(_f.Records).SourcePath));
+    }
+
+    [Fact]
+    public async Task LockedFile_WaitsUntilReleasedThenSucceeds()
+    {
+        var path = _f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif());
+        var writer = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.None);
+
+        _f.Worker.EnqueueFile(path);
+        for (var i = 0; i < 5; i++)
+        {
+            writer.WriteByte(0); // 模擬仍在複製中：持續寫入讓大小變動
+            await writer.FlushAsync();
+            await Task.Delay(100);
+        }
+
+        await writer.DisposeAsync();
+        await _f.WaitForRecordsAsync(1);
+
+        Assert.Equal(ArchiveStatus.Success, Assert.Single(_f.Records).Status);
+    }
+
+    [Fact]
+    public async Task FileLockedWithoutProgress_FailsAfterTimeout()
+    {
+        var path = _f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif());
+        await using var holder = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        _f.Worker.EnqueueFile(path);
+        await _f.WaitForBatchesAsync(1);
+
+        Assert.Equal(ArchiveStatus.Failed, Assert.Single(_f.Records).Status);
+        Assert.Equal(new BatchSummary(Succeeded: 0, Skipped: 0, Failed: 1), Assert.Single(_f.Batches));
+    }
+
+    [Fact]
+    public async Task EnqueueRetry_ReprocessesFailedRecord()
+    {
+        _f.Options = _f.Options with { ArchiveRoot = Path.Combine(_f.Root, "missing") };
+        _f.Worker.EnqueueFile(_f.DropInInbox("a.jpg", JpegExifBuilder.WithoutExif()));
+        await _f.WaitForBatchesAsync(1);
+        var failed = Assert.Single(_f.Records);
+
+        _f.Options = _f.Options with { ArchiveRoot = _f.Root };
+        _f.Worker.EnqueueRetry(failed.Id);
+        await _f.WaitForBatchesAsync(2);
+
+        var retried = _f.Records[1];
+        Assert.Equal(failed.Id, retried.Id);
+        Assert.Equal(ArchiveStatus.Success, retried.Status);
+        Assert.Equal(new BatchSummary(Succeeded: 1, Skipped: 0, Failed: 0), _f.Batches[1]);
+    }
+}
