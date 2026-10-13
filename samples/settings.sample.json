@@ -1,0 +1,9 @@
+{
+  "InboxPath": "D:\\ShootSorterDemo\\Inbox",
+  "ArchiveRoot": "D:\\ShootSorterDemo\\Archive",
+  "Rules": [
+    { "Keyword": "ACME", "CaseName": "ACME" },
+    { "Keyword": "SHOE", "CaseName": "SHOE" }
+  ],
+  "ExcludedExtensions": [ ".xmp", ".thm" ]
+}

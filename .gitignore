@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# 本機 Demo 用的收件匣與歸檔區（README 截圖）
+.demo/
