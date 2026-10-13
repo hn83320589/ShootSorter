@@ -15,6 +15,7 @@ public sealed class ArchiveWorker(ArchiveProcessor processor, Func<ArchiveOption
     private readonly HashSet<string> _pendingPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _stopping = new();
     private Task? _loop;
+    private int _disposed;
     private int _succeeded;
     private int _skipped;
     private int _failed;
@@ -55,15 +56,24 @@ public sealed class ArchiveWorker(ArchiveProcessor processor, Func<ArchiveOption
         _queue.Writer.TryWrite(new RetryItem(recordId));
     }
 
+    /// <summary>
+    /// 停止 worker，可重複呼叫。內部 await 一律不回到呼叫端的 context：
+    /// WPF 在 OnExit 會同步等待這個方法，回到 UI 執行緒的 continuation 會造成 deadlock。
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
         _queue.Writer.TryComplete();
-        await _stopping.CancelAsync();
+        await _stopping.CancelAsync().ConfigureAwait(false);
         if (_loop is not null)
         {
             try
             {
-                await _loop;
+                await _loop.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

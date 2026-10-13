@@ -96,6 +96,24 @@ public sealed class ArchiveWorkerTests : IDisposable
     }
 
     [Fact]
+    public void DisposeAsync_WaitedSynchronouslyOnBlockedUiContext_DoesNotDeadlock()
+    {
+        // WPF 在 OnExit 同步等待關閉時，UI 執行緒被佔住，任何回到該 context 的 continuation 都不會執行。
+        var previous = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new BlockedSynchronizationContext());
+        try
+        {
+#pragma warning disable xUnit1031 // 本測試的目的就是重現 UI 執行緒同步等待的情境。
+            Assert.True(_f.Worker.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5)));
+#pragma warning restore xUnit1031
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previous);
+        }
+    }
+
+    [Fact]
     public async Task EnqueueRetry_ReprocessesFailedRecord()
     {
         _f.Options = _f.Options with { ArchiveRoot = Path.Combine(_f.Root, "missing") };
@@ -111,5 +129,13 @@ public sealed class ArchiveWorkerTests : IDisposable
         Assert.Equal(failed.Id, retried.Id);
         Assert.Equal(ArchiveStatus.Success, retried.Status);
         Assert.Equal(new BatchSummary(Succeeded: 1, Skipped: 0, Failed: 0), _f.Batches[1]);
+    }
+
+    private sealed class BlockedSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            // 刻意不執行，模擬被同步等待卡住的 UI 執行緒。
+        }
     }
 }
